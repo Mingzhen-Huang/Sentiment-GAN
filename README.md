@@ -1,2 +1,2 @@
 # Sentiment-GAN
-This is an improvement GAN over Rhyming-GAN
+This is an improvement over Rhyming-GAN
