@@ -1,3 +1,8 @@
+import numpy as np
+from tqdm import tqdm
+
+
+
 def load_glove_embeddings(embeddings_txt_file: str,
                           embedding_dim: int,
                           vocab_id_to_token: Dict[int, str]) -> np.ndarray:
