@@ -23,6 +23,7 @@ if __name__ == '__main__':
     d_optimizer = optim.Adam(D.parameters(), lr=args.d_lr, betas=optim_betas)
     g_optimizer = optim.Adam(G.parameters(), lr=args.g_lr, betas=optim_betas)
     for epoch in range(args.epochs):
+        print("Training Discriminator")
         for d_index in range(args.d_steps):
             D.zero_grad()
      
@@ -39,7 +40,8 @@ if __name__ == '__main__':
             d_fake_error = criterion(d_fake_decision, Variable(torch.zeros(1)))  # zeros = fake
             d_fake_error.backward()
             d_optimizer.step()     
-     
+        
+        print("Training Generator")
         for g_index in range(args.g_steps):
             #  Train G on D's response 
             G.zero_grad()
