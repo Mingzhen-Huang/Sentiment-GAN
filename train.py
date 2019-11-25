@@ -11,7 +11,7 @@ from torch.autograd import Variable
 from data import read_instances, save_vocabulary, build_vocabulary, \
                  load_vocabulary, index_instances, generate_batches, load_glove_embeddings, get_sentence
 from pprint import pprint
-import pdb
+# import pdb
 
 print_interval = 1
 
@@ -46,6 +46,11 @@ if __name__ == '__main__':
     VOCAB_SIZE = 10000
 
     vocab_token_to_id, vocab_id_to_token = build_vocabulary(train_instances, VOCAB_SIZE)
+
+    with open('vocab_id_to_token', "w") as file:
+        # line number is the index of the token
+        for idx in range(len(vocab_id_to_token)):
+            file.write(vocab_id_to_token[idx] + "\n")
 
     vocabulary_size = len(vocab_id_to_token)
 
@@ -117,7 +122,7 @@ if __name__ == '__main__':
                 g_error.backward()
                 g_optimizer.step()  # Only optimizes G's parameters
 
-                pdb.set_trace()
+                # pdb.set_trace()
 
         avg_g_loss = total_g_loss / (args.batch_size * args.g_steps)
 
