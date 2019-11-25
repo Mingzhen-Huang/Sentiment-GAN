@@ -71,7 +71,7 @@ def build_vocabulary(instances: List[Dict],
     print(id_to_token)
     return (token_to_id, id_to_token)
 
-build_vocabulary(read_instances("test.txt"), 10000)
+#build_vocabulary(read_instances("test.txt"), 10000)
 
 def save_vocabulary(vocab_id_to_token: Dict[int, str], vocabulary_path: str) -> None:
     """
