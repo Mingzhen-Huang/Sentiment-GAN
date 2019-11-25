@@ -8,7 +8,8 @@ from model import Generator, Discriminator
 import torch.optim as optim
 import random
 from torch.autograd import Variable
-
+from data import read_instances, save_vocabulary, build_vocabulary, \
+                 load_vocabulary, index_instances, generate_batches, load_glove_embeddings
 
 
 print_interval = 10
@@ -37,6 +38,21 @@ if __name__ == '__main__':
     print("Random Seed: ", manualSeed)
     random.seed(manualSeed)
     torch.manual_seed(manualSeed)
+
+    print("\nGenerating Training batches:")
+    train_instances = read_instances('ern2017-session4-shakespeare-sonnets-dataset.txt')
+
+    VOCAB_SIZE = 10000
+    with open('data/glove_common_words.txt') as file:
+        glove_common_words = [line.strip() for line in file.readlines() if line.strip()]
+
+    vocab_token_to_id, vocab_id_to_token = build_vocabulary(train_instances, VOCAB_SIZE)
+    train_instances = index_instances(train_instances, vocab_token_to_id)
+    train_batches = generate_batches(train_instances, args.batch_size)
+
+    print(train_batches[0]['inputs'].shape)
+
+
 
     # todo input parameters
     G = Generator(args.batch_size, args.hidden_size, args.n_layer, args.embed_dim, args.drop_out)
@@ -87,7 +103,7 @@ if __name__ == '__main__':
                 g_fake_data = G(gen_input)
                 dg_fake_label = D(g_fake_data)
                 g_error = criterion(dg_fake_label, Variable(torch.ones(1)))  # pretend all true
-                total_g_loss+=g_error
+                total_g_loss += g_error
                 g_error.backward()
                 g_optimizer.step()  # Only optimizes G's parameters
 
