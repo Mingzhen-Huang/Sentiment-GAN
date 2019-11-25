@@ -13,14 +13,16 @@ from torch.nn.utils.rnn import pad_sequence
 class Generator(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, embedding_dim, dropout):
         super(Generator, self).__init__()
+
+        self.noise = torch.rand(input_size, hidden_size)
         self.model = nn.Sequential(
             nn.GRU(input_size = input_size, hidden_size = hidden_size, num_layers = num_layers, dropout = dropout),
-            nn.Linear(hidden_size, input_size),
+            nn.Linear(hidden_size, 1),
             nn.Tanh(),
         )
 
-    def forward(self, noise):       
-        return self.model(noise).int()
+    def forward(self):       
+        return self.model(self.noise).int()
 
 
 class Discriminator(nn.Module):
@@ -35,5 +37,5 @@ class Discriminator(nn.Module):
 
     def forward(self, inputs):
         mask = torch.where(inputs > 0, torch.tensor([1.]), torch.tensor([0.]))
-        word_embed = tf.nn.embedding_lookup(self.embeddings, inputs)
+        word_embed = self.embeddings(inputs)
         return self.model(word_embed)
