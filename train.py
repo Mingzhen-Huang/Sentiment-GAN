@@ -43,8 +43,6 @@ if __name__ == '__main__':
     train_instances = read_instances('ern2017-session4-shakespeare-sonnets-dataset.txt')
 
     VOCAB_SIZE = 10000
-    with open('data/glove_common_words.txt') as file:
-        glove_common_words = [line.strip() for line in file.readlines() if line.strip()]
 
     vocab_token_to_id, vocab_id_to_token = build_vocabulary(train_instances, VOCAB_SIZE)
     train_instances = index_instances(train_instances, vocab_token_to_id)
@@ -87,7 +85,7 @@ if __name__ == '__main__':
                 d_fake_error.backward()
                 d_optimizer.step()
 
-        avg_d_real_loss = total_d_real_loss/(args.batch_size*args.d_steps)
+        avg_d_real_loss = total_d_real_loss / (args.batch_size*args.d_steps)
         avg_d_fake_loss = total_d_fake_loss / (args.batch_size * args.d_steps)
 
         G.train()
