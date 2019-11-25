@@ -34,8 +34,13 @@ class Discriminator(nn.Module):
         self.embeddings = embeddings
 
         self.model = nn.Sequential(
+<<<<<<< HEAD
             nn.GRU(input_size = input_size, hidden_size = hidden_size, batch_first = True,  num_layers = num_layers, dropout = dropout)[:,-1,:],
             nn.Linear(hidden_size, 1),
+=======
+            nn.GRU(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, dropout = dropout),
+            nn.Linear(input_size, 1),
+>>>>>>> ce7c32fae9ec96a998e43f8419a1c368448849e3
             nn.Sigmoid(),
         )
 
