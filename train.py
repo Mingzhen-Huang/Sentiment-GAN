@@ -45,16 +45,23 @@ if __name__ == '__main__':
     VOCAB_SIZE = 10000
 
     vocab_token_to_id, vocab_id_to_token = build_vocabulary(train_instances, VOCAB_SIZE)
+
+    vocabulary_size = len(vocab_id_to_token)
+
     train_instances = index_instances(train_instances, vocab_token_to_id)
     train_batches = generate_batches(train_instances, args.batch_size)
 
-    print(train_batches[0]['inputs'].shape)
+    glove_embeddings = load_glove_embeddings(args.embed_file, args.embed_dim, vocab_id_to_token)
 
+    embeddings = nn.Embedding(vocabulary_size, args.embed_dim)
+    embeddings.weight.data.copy_(torch.from_numpy(glove_embeddings))
 
+    batch_size, sentence_length = train_batches[0]['inputs'].shape
 
     # todo input parameters
+
     G = Generator(args.batch_size, args.hidden_size, args.n_layer, args.embed_dim, args.drop_out)
-    D = Discriminator(args.batch_size, args.hidden_size, args.n_layer, args.embed_dim, args.drop_out)
+    D = Discriminator(args.batch_size, args.hidden_size, args.n_layer, args.embed_dim, embeddings, args.drop_out)
 
     criterion = nn.BCELoss()  
     d_optimizer = optim.Adam(D.parameters(), lr=args.d_lr, betas=args.adam_beta, weight_decay=args.weight_decay)
@@ -68,19 +75,19 @@ if __name__ == '__main__':
 
         for d_index in range(args.d_steps):
 
-            for data in range(args.batch_size):
+            for batch in train_batches:
                 #  Train D on real
                 D.zero_grad()
-                d_real_data = None
+                d_real_data = batch['inputs']
                 d_real_label = D(d_real_data)
-                d_real_error = criterion(d_real_label, Variable(torch.ones(1)))  # ones = true
+                d_real_error = criterion(d_real_label, Variable(torch.ones((batch_size,1))))  # ones = true
                 total_d_real_loss += d_real_error
                 d_real_error.backward()  # compute/store gradients, but don't change params
                 #  Train D on fake
-                d_gen_input = None
-                d_fake_data = G(d_gen_input).detach()  # detach to avoid training G on these labels
+
+                d_fake_data = G().detach()  # detach to avoid training G on these labels
                 d_fake_label = D(d_fake_data)
-                d_fake_error = criterion(d_fake_label, Variable(torch.zeros(1)))  # zeros = fake
+                d_fake_error = criterion(d_fake_label, Variable(torch.zeros((batch_size,1))))  # zeros = fake
                 total_d_fake_loss += d_fake_error
                 d_fake_error.backward()
                 d_optimizer.step()
@@ -95,10 +102,7 @@ if __name__ == '__main__':
             for data in range(args.batch_size):
                 G.zero_grad()
 
-                gen_input = torch.randn(args.batch_size, length)
-
-
-                g_fake_data = G(gen_input)
+                g_fake_data = G()
                 dg_fake_label = D(g_fake_data)
                 g_error = criterion(dg_fake_label, Variable(torch.ones(1)))  # pretend all true
                 total_g_loss += g_error
