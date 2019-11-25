@@ -187,9 +187,10 @@ def generate_batches(instances: List[Dict], batch_size) -> List[Dict[str, np.nda
 
     return batches
 
-# def get_sentence(index: List[], id_to_token: Dict) -> str:
-#     print("\nOutput sentense.")
-#     str = ""
-#     for idx in index:
-#         str = str + " " + id_to_token[idx]
-#     return str
+def get_sentence(index: List[int], id_to_token: Dict) -> str:
+    print("\nOutput sentence....")
+    str = ""
+    for idx in index:
+        str = str + " " + id_to_token[idx]
+    str = str.strip() + "."
+    return str
