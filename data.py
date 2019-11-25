@@ -61,13 +61,14 @@ def build_vocabulary(instances: List[Dict],
         words.extend(instance["text_tokens"])
     token_counts = dict(Counter(words).most_common(vocab_size))
     for token, _ in token_counts.items():
-        token_to_id[token] = len(token_to_id)
+        if token not in token_to_id:
+            token_to_id[token] = len(token_to_id)
         if len(token_to_id) == vocab_size:
             break
 
     id_to_token = dict(zip(token_to_id.values(), token_to_id.keys()))
-    # print(token_to_id)
-    # print(id_to_token)
+    print(token_to_id)
+    print(id_to_token)
     return (token_to_id, id_to_token)
 
 #build_vocabulary(read_instances("test.txt"), 10000)
@@ -186,9 +187,9 @@ def generate_batches(instances: List[Dict], batch_size) -> List[Dict[str, np.nda
 
     return batches
 
-# def get_sentence(index: List[], id_to_token: Dict) -> str:
-#     print("\nOutput sentense.")
-#     str = ""
-#     for idx in index:
-#         str = str + " " + id_to_token[idx]
-#     return str
+def get_sentence(index: List[], id_to_token: Dict) -> str:
+    print("\nOutput sentense.")
+    str = ""
+    for idx in index:
+        str = str + " " + id_to_token[idx]
+    return str
