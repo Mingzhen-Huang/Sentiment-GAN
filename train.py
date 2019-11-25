@@ -48,7 +48,9 @@ if __name__ == '__main__':
     train_instances = index_instances(train_instances, vocab_token_to_id)
     train_batches = generate_batches(train_instances, args.batch_size)
 
-    print(train_batches[0]['inputs'].shape)
+
+
+    batch_size, sentence_length = train_batches[0]['inputs'].shape
 
 
 
@@ -77,8 +79,8 @@ if __name__ == '__main__':
                 total_d_real_loss += d_real_error
                 d_real_error.backward()  # compute/store gradients, but don't change params
                 #  Train D on fake
-                d_gen_input = None
-                d_fake_data = G(d_gen_input).detach()  # detach to avoid training G on these labels
+
+                d_fake_data = G().detach()  # detach to avoid training G on these labels
                 d_fake_label = D(d_fake_data)
                 d_fake_error = criterion(d_fake_label, Variable(torch.zeros(1)))  # zeros = fake
                 total_d_fake_loss += d_fake_error
@@ -95,10 +97,7 @@ if __name__ == '__main__':
             for data in range(args.batch_size):
                 G.zero_grad()
 
-                gen_input = torch.randn(args.batch_size, length)
-
-
-                g_fake_data = G(gen_input)
+                g_fake_data = G()
                 dg_fake_label = D(g_fake_data)
                 g_error = criterion(dg_fake_label, Variable(torch.ones(1)))  # pretend all true
                 total_g_loss += g_error
