@@ -26,7 +26,7 @@ class Generator(nn.Module):
 
     def forward(self):     
         result = self.model(self.noise).int()
-        mask = torch.where(result > 0 && result < self.vocab_size, torch.tensor([1.]), torch.tensor([0.]))
+        mask = torch.where(result > 0 and result < self.vocab_size, torch.tensor([1.]), torch.tensor([0.]))
         return result * mask
 
 
@@ -44,7 +44,7 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, inputs):
-    	inputs = torch.tensor(inputs,dtype=torch.long)
-        mask = torch.where(inputs > 0, torch.tensor([1.]), torch.tensor([0.]))
+        inputs = torch.tensor(inputs,dtype=torch.long)
+        # mask = torch.where(inputs > 0, torch.tensor([1.]), torch.tensor([0.]))
         word_embed = self.embeddings(inputs)
         return self.model(word_embed)
