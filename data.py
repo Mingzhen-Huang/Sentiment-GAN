@@ -9,6 +9,7 @@ import zipfile
 import numpy as np
 from tqdm import tqdm
 import spacy
+import re
 
 
 nlp = spacy.load("en_core_web_sm", disable = ['ner', 'tagger', 'parser', 'textcat'])
@@ -30,7 +31,11 @@ def read_instances(data_file_path: str,
     with open(data_file_path) as file:
         for line in tqdm(file.readlines()):
             instance = {"text": None}
-            instance["text"] = line.rstrip("\n")[:-1].replace(',', '').strip()
+            # instance["text"] = line.rstrip("\n")[:-1].replace(',', '').strip()
+            instance["text"] = line.rstrip("\n").strip()
+            punc = '[,.!:;?]'
+            instance["text"] = re.sub(punc, '', instance["text"])
+            instance["text"] = re.sub('-', ' ', instance["text"])
             text = instance["text"]
             tokens = [token.text.lower() for token in nlp.tokenizer(text)][:max_allowed_num_tokens]
             instance["text_tokens"] = tokens
@@ -43,10 +48,10 @@ def read_instances(data_file_path: str,
         text_tokens_length = len(instance["text_tokens"])
         if text_tokens_length < clause_max_len:
             instance["text_tokens"].extend(["@PAD@"]*(clause_max_len-text_tokens_length))
-    # print(instances)
-    # print(clause_max_len)
+    #print(instances)
+    #print(clause_max_len)
     return instances
-# read_instances("test.txt")
+#read_instances("test.txt")
 
 def build_vocabulary(instances: List[Dict],
                      vocab_size: 10000):
@@ -67,8 +72,8 @@ def build_vocabulary(instances: List[Dict],
             break
 
     id_to_token = dict(zip(token_to_id.values(), token_to_id.keys()))
-    # print(token_to_id)
-    # print(id_to_token)
+    #print(token_to_id)
+    #print(id_to_token)
     return (token_to_id, id_to_token)
 
 #build_vocabulary(read_instances("test.txt"), 10000)
