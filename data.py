@@ -35,7 +35,7 @@ def read_instances(data_file_path: str,
             tokens = [token.text.lower() for token in nlp.tokenizer(text)][:max_allowed_num_tokens]
             instance["text_tokens"] = tokens
             instance.pop("text")
-            if instance["text_tokens"] != []:
+            if len(instance["text_tokens"]) != 1:
                 instances.append(instance)
             if len(instance["text_tokens"]) > clause_max_len:
                 clause_max_len = len(instance["text_tokens"])
