@@ -17,7 +17,7 @@ class Generator(nn.Module):
         self.noise = torch.rand(input_size, hidden_size)
         self.vocab_size = vocab_size
         self.model = nn.Sequential(
-            nn.GRU(input_size = input_size, hidden_size = hidden_size, num_layers = num_layers, dropout = dropout),
+            nn.GRU(input_size = input_size, hidden_size = hidden_size, batch_first = True,  num_layers = num_layers, dropout = dropout),
             nn.Linear(input_size, sentence_len),
             nn.Tanh(),
         )
@@ -34,9 +34,9 @@ class Discriminator(nn.Module):
         self.embeddings = embeddings
 
         self.model = nn.Sequential(
-            nn.GRU(input_size = input_size, hidden_size = hidden_size, num_layers = num_layers, dropout = dropout),
-            nn.Linear(input_size, 1),
-            nn.sigmoid(),
+            nn.GRU(input_size = input_size, hidden_size = hidden_size, batch_first = True,  num_layers = num_layers, dropout = dropout)[:,-1,:],
+            nn.Linear(hidden_size, 1),
+            nn.Sigmoid(),
         )
 
     def forward(self, inputs):
