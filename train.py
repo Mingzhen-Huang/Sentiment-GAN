@@ -79,7 +79,7 @@ if __name__ == '__main__':
                 #  Train D on real
                 D.zero_grad()
                 d_real_data = batch['inputs']
-
+                print(d_real_data.shape)
                 d_real_label = D(d_real_data)
                 d_real_error = criterion(d_real_label, Variable(torch.ones((batch_size,1))))  # ones = true
                 total_d_real_loss += d_real_error

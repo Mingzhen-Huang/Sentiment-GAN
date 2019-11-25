@@ -34,9 +34,9 @@ class Discriminator(nn.Module):
         self.embeddings = embeddings
 
         self.model = nn.Sequential(
-            nn.GRU(input_size = input_size, hidden_size = hidden_size, num_layers = num_layers, dropout = dropout),
+            nn.GRU(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, dropout = dropout),
             nn.Linear(input_size, 1),
-            nn.sigmoid(),
+            nn.Sigmoid(),
         )
 
     def forward(self, inputs):
