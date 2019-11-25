@@ -61,7 +61,8 @@ def build_vocabulary(instances: List[Dict],
         words.extend(instance["text_tokens"])
     token_counts = dict(Counter(words).most_common(vocab_size))
     for token, _ in token_counts.items():
-        token_to_id[token] = len(token_to_id)
+        if token not in token_to_id:
+            token_to_id[token] = len(token_to_id)
         if len(token_to_id) == vocab_size:
             break
 
