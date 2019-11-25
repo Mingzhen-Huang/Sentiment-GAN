@@ -23,9 +23,9 @@ class Generator(nn.Module):
     def forward(self):    
         # pdb.set_trace()
         rnn_output,_ = self.gru(self.noise,None)
-        rnn_output = torch.squeeze(rnn_output[:,-1,:])
+        rnn_output = torch.squeeze(rnn_output)
         dense_output = self.dense(rnn_output)*self.vocab_size
-        result = torch.abs(dense_output).int()
+        result = torch.squeeze(torch.abs(dense_output).int())
         mask = torch.where(result < self.vocab_size, torch.tensor([1.]), torch.tensor([0.]))
         # pdb.set_trace()
         return result * mask
@@ -52,4 +52,4 @@ class Discriminator(nn.Module):
         dense_output = self.dense(rnn_output)
         
         logits = nn.Sigmoid()(torch.squeeze(dense_output))
-        return logits
+        return logits.view(batch_size, 1)
