@@ -67,8 +67,8 @@ def build_vocabulary(instances: List[Dict],
             break
 
     id_to_token = dict(zip(token_to_id.values(), token_to_id.keys()))
-    print(token_to_id)
-    print(id_to_token)
+    # print(token_to_id)
+    # print(id_to_token)
     return (token_to_id, id_to_token)
 
 #build_vocabulary(read_instances("test.txt"), 10000)
@@ -187,9 +187,10 @@ def generate_batches(instances: List[Dict], batch_size) -> List[Dict[str, np.nda
 
     return batches
 
-def get_sentence(index: List[], id_to_token: Dict) -> str:
-    print("\nOutput sentense.")
+def get_sentence(index: List[int], id_to_token: Dict) -> str:
+    print("\nOutput sentence....")
     str = ""
     for idx in index:
         str = str + " " + id_to_token[idx]
+    str = str.strip() + "."
     return str
