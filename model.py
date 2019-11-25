@@ -19,7 +19,7 @@ class Generator(nn.Module):
             nn.Tanh(),
         )
 
-    def forward(self, noise, labels):       
+    def forward(self, noise):       
         return self.model(noise).int()
 
 
@@ -30,9 +30,10 @@ class Discriminator(nn.Module):
         self.model = nn.Sequential(
             nn.GRU(input_size = input_size, hidden_size = hidden_size, num_layers = num_layers, dropout = dropout),
             nn.Linear(input_size, 1),
-            F.softmax(),
+            F.sigmoid(),
         )
 
-    def forward(self, inputs, labels):
+    def forward(self, inputs):
+    	mask = torch.where(inputs > 0, torch.tensor([1.]), torch.tensor([0.]))
         word_embed = tf.nn.embedding_lookup(self.embeddings, inputs)
         return self.model(word_embed)
