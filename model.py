@@ -24,7 +24,7 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, embedding_dim, dropout):
+    def __init__(self, input_size, hidden_size, num_layers, embedding_dim, embeddings, dropout):
         super(Discriminator, self).__init__()        
         self.embeddings = embeddings
         self.model = nn.Sequential(
@@ -34,6 +34,6 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, inputs):
-    	mask = torch.where(inputs > 0, torch.tensor([1.]), torch.tensor([0.]))
+        mask = torch.where(inputs > 0, torch.tensor([1.]), torch.tensor([0.]))
         word_embed = tf.nn.embedding_lookup(self.embeddings, inputs)
         return self.model(word_embed)
