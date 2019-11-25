@@ -51,16 +51,12 @@ if __name__ == '__main__':
     train_instances = index_instances(train_instances, vocab_token_to_id)
     train_batches = generate_batches(train_instances, args.batch_size)
 
-    embeddings = load_glove_embeddings(args.embed_file, args.embed_dim, vocab_id_to_token)
+    glove_embeddings = load_glove_embeddings(args.embed_file, args.embed_dim, vocab_id_to_token)
 
-    print(embeddings)
-
-    # embeddings = nn.Embedding(vocabulary_size, args.embed_dim)
-
+    embeddings = nn.Embedding(vocabulary_size, args.embed_dim)
+    embeddings.weight.data.copy_(torch.from_numpy(glove_embeddings))
 
     batch_size, sentence_length = train_batches[0]['inputs'].shape
-
-
 
     # todo input parameters
 
