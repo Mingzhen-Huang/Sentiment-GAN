@@ -5,6 +5,8 @@ from gan import *
 from util import *
 import argparse
 
+models = {'AWD':AWD_LSTM, 'XL':TransformerXL}
+
 def train_lm(path,filename,model='AWD_LSTM',
              epochs=8,pretrained_fnames=None):
     
@@ -14,7 +16,7 @@ def train_lm(path,filename,model='AWD_LSTM',
     
     if pretrained_fnames: pretrained_fnames = pretrained_fnames.split(',')
     learn = language_model_learner(data_lm,models[model],
-                                   config=config,pretrained=False,
+                                   config=None,pretrained=False,
                                    pretrained_fnames=pretrained_fnames)
     print(f'training lm model {model}; pretrained from {pretrained_fnames};')
     
@@ -101,8 +103,8 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Model')
     parser.add_argument('--path', type=str, help="path of data", default='./data')
-    parser.add_argument('--train_lm', type=bool, action="store_true", default=False)
-    parser.add_argument('--train_gan', type=bool, action="store_true", default=False)
+    parser.add_argument('--train_lm', action="store_true", default=False)
+    parser.add_argument('--train_gan', action="store_true", default=False)
     parser.add_argument('--save-path', type=str, help='path to save models', default='models/')
     args = parser.parse_args()
 
