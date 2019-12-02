@@ -8,6 +8,7 @@ data/
 
 # Distribution / packaging
 data/
+data.zip
 .Python
 build/
 develop-eggs/

@@ -6,7 +6,7 @@ from util import *
 import argparse
 
 def train_lm(path,filename,model='AWD_LSTM',
-             epochs=8,pretrained_fnames=None,preds=True):
+             epochs=8,pretrained_fnames=None):
     
     #get data after running preprocess
     print(f'loading data from {path}/{filename};')
@@ -101,46 +101,37 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Model')
     parser.add_argument('--path', type=str, help="path of data", default='./data')
-    parser.add_argument('--g-lr', type=float, help="learning rate of discriminator model", default=100)
-    parser.add_argument('--n-layer', type=int, help='number of GRU layers', default=1)
-    parser.add_argument('--batch-size', type=int, help="size of batch", default=10)
-    parser.add_argument('--epochs', type=int, help="num epochs", default=10)
-    parser.add_argument('--embed-file', type=str, help="embedding location", default='./data/glove.6B.100D.txt')
-    parser.add_argument('--embed-dim', type=int, help="size of embeddings", default=100)
-    parser.add_argument('--drop-out',type=float,help='drop out of GRU', default=0)
-    parser.add_argument('--hidden-size', type=int, help="size of hidden dimension", default=128)
-    parser.add_argument('--d-steps', type=int, help="numbers of training discriminator for an epoch", default=1)
-    parser.add_argument('--g-steps', type=int, help="numbers of training generator for an epoch", default=20)
-    parser.add_argument('--adam-beta', type=tuple, help='beta1 for Adam optimizers', default=(0.5,0.999))
-    parser.add_argument('--weight-decay', type=float, help='weight decay for Adam optimizers', default=0)
+    parser.add_argument('--train_lm', type=bool, action="store_true", default=False)
+    parser.add_argument('--train_gan', type=bool, action="store_true", default=False)
     parser.add_argument('--save-path', type=str, help='path to save models', default='models/')
     args = parser.parse_args()
 
     path = Path(args.path)
+    if args.train_lm:
+        train_lm(path,'poems_tmp','AWD',8)
+    if args.train_gan:
+        data_lm = load_data(path, 'poems_tmp')
+        trn_dl = data_lm.train_dl
+        val_dl = data_lm.valid_dl
+        learn = language_model_learner(data_lm, arch=AWD_LSTM)
+        learn.load('poems_tmp_finetuned')
 
+        encoder = deepcopy(learn.model[0])
+        x, y = next(iter(trn_dl))
+        outs = encoder(x)
+        generator = deepcopy(learn.model) 
+        generator.load_state_dict(learn.model.state_dict())
 
-    data_lm = load_data(path, 'poems_tmp')
-    trn_dl = data_lm.train_dl
-    val_dl = data_lm.valid_dl
-    learn = language_model_learner(data_lm, arch=AWD_LSTM)
-    learn.load('poems_tmp_finetuned')
+        disc = TextDicriminator(encoder,400).cuda()
+        out = disc(x)
+        probs,raw_outputs, outputs = generator(x)
+        optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
+        optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
 
-    encoder = deepcopy(learn.model[0])
-    x, y = next(iter(trn_dl))
-    outs = encoder(x)
-    generator = deepcopy(learn.model) 
-    generator.load_state_dict(learn.model.state_dict())
+        disc.train()
+        generator.train();
 
-    disc = TextDicriminator(encoder,400).cuda()
-    out = disc(x)
-    probs,raw_outputs, outputs = generator(x)
-    optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
-    optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
-
-    disc.train()
-    generator.train();
-
-    train(generator, disc, 1, trn_dl, val_dl, optimizerD, optimizerG, first=False)
-    learn.model.load_state_dict(generator.state_dict())
-    learn.predict("Red",n_words=50)
-    learn.save('poems_gan_gumbel')
+        train(generator, disc, 1, trn_dl, val_dl, optimizerD, optimizerG, first=False)
+        learn.model.load_state_dict(generator.state_dict())
+        learn.predict("Red",n_words=50)
+        learn.save('poems_gan_gumbel')
