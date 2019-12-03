@@ -1,150 +1,142 @@
-import pickle
-from tqdm import tqdm
+from fastai import *
+from fastai.text import *
+from fastai.callbacks.tracker import SaveModelCallback, EarlyStoppingCallback
+from gan import *
+from util import *
 import argparse
-import torch
-import torch.nn as nn
-import numpy as np
-from model import Generator, Discriminator
-import torch.optim as optim
-import random
-from torch.autograd import Variable
-from data import read_instances, save_vocabulary, build_vocabulary, \
-                 load_vocabulary, index_instances, generate_batches, load_glove_embeddings, get_sentence
-from pprint import pprint
-# import pdb
+import logging
 
-print_interval = 1
+models = {'AWD':AWD_LSTM, 'XL':TransformerXL}
+
+def train_lm(path,filename,model='AWD_LSTM',
+             epochs=8,pretrained_fnames=None):
+    
+    #get data after running preprocess
+    print(f'loading data from {path}/{filename};')
+    data_lm = load_data(path,filename, bs=64,bptt=70)
+    
+    if pretrained_fnames: pretrained_fnames = pretrained_fnames.split(',')
+    learn = language_model_learner(data_lm,models[model],
+                                   config=None,pretrained=False,
+                                   pretrained_fnames=pretrained_fnames)
+    print(f'training lm model {model}; pretrained from {pretrained_fnames};')
+    
+    #early stopping and saving at every epoch
+    cb = [SaveModelCallback(learn),EarlyStoppingCallback(learn)]
+    
+    if pretrained_fnames:
+        #layered training
+        print(f'training lm model head;')
+        learn.fit_one_cycle(1, 3e-3, moms=(0.8,0.7))
+        print(f'saving lm model head to {path}/{filename}_head;')
+        learn.save(filename+'_head')
+        learn.unfreeze()
+        
+    print(f'training for {epochs} epochs')
+    learn.fit_one_cycle(epochs, 3e-4, moms=(0.8,0.7),callbacks=cb)
+    print(f'saving model to {path}/{filename}_finetuned')
+    learn.save(filename+'_lm')
+
+
+def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, first=True):
+    gen_iterations = 0
+    
+    for epoch in range(epochs):
+        gen.train(); disc.train()
+        n = len(trn_dl)
+        #train loop
+        with tqdm(total=n) as pbar:
+            for i, ds in enumerate(trn_dl):
+                x, y = ds
+                bs,sl = x.size()
+                disc.eval(), gen.train()
+                fake,_,_ = gen(x)
+                gen.zero_grad()
+                fake_sample =seq_gumbel_softmax(fake)
+                with torch.no_grad():
+                    gen_loss = reward = disc(fake_sample)
+                    if crit: gen_loss = crit(fake,fake_sample,reward.squeeze(1))
+                    gen_loss = gen_loss.mean()
+                gen_loss.requires_grad_(True)
+                gen_loss.backward()
+                optimizerG.step()
+                gen_iterations += 1
+                d_iters = 3
+                for j in range(d_iters):
+                    gen.eval()
+                    disc.train()
+                    with torch.no_grad():
+                        fake,_,_ = gen(x)
+                        fake_sample = seq_gumbel_softmax(fake)
+                    disc.zero_grad()
+                    fake_loss = disc(fake_sample)
+                    #fake_loss.requires_grad=True
+                    real_loss = disc(y.view(bs,sl))
+                    #real_loss.requires_grad=True
+                    disc_loss = (fake_loss-real_loss).mean(0)
+                    disc_loss.backward()
+                    optimizerD.step()
+                pbar.update()
+        print(f'Epoch {epoch}:')
+        print('Train Loss:')
+        print(f'Loss_D {disc_loss.data.item()}; Loss_G {gen_loss.data.item()} Ppx {torch.exp(lm_loss(fake,y))}')
+        print(f'D_real {real_loss.mean(0).view(1).data.item()}; Loss_D_fake {fake_loss.mean(0).view(1).data.item()}')
+        disc.eval(), gen.eval()
+        with tqdm(total=len(val_dl)) as pbar:
+            for i, ds in enumerate(val_dl):
+                with torch.no_grad():
+                    x, y = ds
+                    bs,sl = x.size()
+                    fake,_,_ = gen(x)
+                    fake_sample =seq_gumbel_softmax(fake)
+                    gen_loss = reward = disc(fake_sample)
+                    if crit: gen_loss = crit(fake,fake_sample,reward.squeeze(1))
+                    gen_loss = gen_loss.mean()
+                    fake_sample = seq_gumbel_softmax(fake)
+                    fake_loss = disc(fake_sample)
+                    real_loss = disc(y.view(bs,sl))
+                    disc_loss = (fake_loss-real_loss).mean(0)
+                pbar.update()
+        print('Valid Loss:')
+        print(f'Loss_D {disc_loss.data.item()}; Loss_G {gen_loss.data.item()} Ppx {torch.exp(lm_loss(fake,y))}')
+        print(f'D_real {real_loss.mean(0).view(1).data.item()}; Loss_D_fake {fake_loss.mean(0).view(1).data.item()}')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Model')
-    parser.add_argument('--d-lr', type=float, help="learning rate of discriminator model", default=0.001)
-    parser.add_argument('--g-lr', type=float, help="learning rate of generator model", default=0.0001)
-    parser.add_argument('--n-layer', type=int, help='number of GRU layers', default=1)
-    parser.add_argument('--batch-size', type=int, help="size of batch", default=10)
-    parser.add_argument('--epochs', type=int, help="num epochs", default=10)
-    parser.add_argument('--embed-file', type=str, help="embedding location", default='./data/glove.6B.100D.txt')
-    parser.add_argument('--embed-dim', type=int, help="size of embeddings", default=100)
-    parser.add_argument('--drop-out', type=float, help='drop out of GRU', default=0)
-    parser.add_argument('--hidden-size', type=int, help="size of hidden dimension", default=128)
-    parser.add_argument('--d-steps', type=int, help="numbers of training discriminator for an epoch", default=1)
-    parser.add_argument('--g-steps', type=int, help="numbers of training generator for an epoch", default=50)
-    parser.add_argument('--adam-beta', type=tuple, help='beta1 for Adam optimizers', default=(0.5, 0.999))
-    parser.add_argument('--weight-decay', type=float, help='weight decay for Adam optimizers', default=0)
-    parser.add_argument('--save-path', type=str, help='path to save models', default='models/')
+    parser.add_argument('--path', type=str, help="path of data", default='./data')
+    parser.add_argument('--train_lm', action="store_true", default=False)
+    parser.add_argument('--train_gan', action="store_true", default=False)
+    parser.add_argument('--lm_epoch', type=int, default=8)
+    parser.add_argument('--gan_epoch', type=int, default=8)
+    parser.add_argument('--pretrain_lm', type=str,  default=None)
     args = parser.parse_args()
 
-    manualSeed = 999
-    model_num = 0
-    # manualSeed = random.randint(1, 10000) # use if you want new results
-    print("Random Seed: ", manualSeed)
-    random.seed(manualSeed)
-    torch.manual_seed(manualSeed)
+    path = Path(args.path)
+    if args.train_lm:
+        train_lm(path,'poems_tmp','AWD',args.lm_epoch, args.pretrain_lm)
+    if args.train_gan:
+        data_lm = load_data(path, 'poems_tmp')
+        trn_dl = data_lm.train_dl
+        val_dl = data_lm.valid_dl
+        learn = language_model_learner(data_lm, arch=AWD_LSTM)
+        learn.load('poems_tmp_lm')
 
-    print("\nGenerating Training batches:")
-    train_instances = read_instances('ern2017-session4-shakespeare-sonnets-dataset.txt')
+        encoder = deepcopy(learn.model[0])
+        x, y = next(iter(trn_dl))
+        outs = encoder(x)
+        generator = deepcopy(learn.model) 
+        generator.load_state_dict(learn.model.state_dict())
 
-    VOCAB_SIZE = 10000
+        disc = TextDicriminator(encoder,400).cuda()
+        out = disc(x)
+        probs,raw_outputs, outputs = generator(x)
+        optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
+        optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
 
-    vocab_token_to_id, vocab_id_to_token = build_vocabulary(train_instances, VOCAB_SIZE)
+        disc.train()
+        generator.train();
 
-    with open('vocab_id_to_token', "w") as file:
-        # line number is the index of the token
-        for idx in range(len(vocab_id_to_token)):
-            file.write(vocab_id_to_token[idx] + "\n")
-
-    vocabulary_size = len(vocab_id_to_token)
-
-    train_instances = index_instances(train_instances, vocab_token_to_id)
-    train_batches = generate_batches(train_instances, args.batch_size)
-
-    glove_embeddings = load_glove_embeddings(args.embed_file, args.embed_dim, vocab_id_to_token)
-
-    embeddings = nn.Embedding(vocabulary_size, args.embed_dim)
-    embeddings.weight.data.copy_(torch.from_numpy(glove_embeddings))
-
-    batch_size, sentence_length = train_batches[0]['inputs'].shape
-
-    # todo input parameters
-
-    G = Generator(args.batch_size, sentence_length, vocabulary_size, args.hidden_size, args.n_layer, args.embed_dim, args.drop_out)
-    D = Discriminator(args.batch_size, args.hidden_size, args.n_layer, args.embed_dim, embeddings, args.drop_out)
-    criterion = nn.BCELoss()  
-    d_optimizer = optim.Adam(D.parameters(), lr=args.d_lr)
-    g_optimizer = optim.Adam(G.parameters(), lr=args.g_lr)
-    criterion_g = nn.BCELoss()
-
-
-    for epoch in range(args.epochs):
-        total_d_real_loss = 0
-        total_d_fake_loss = 0
-        total_g_loss = 0
-
-        D.train()
-
-        for d_index in range(args.d_steps):
-
-            for batch in train_batches:
-                #  Train D on real
-                d_optimizer.zero_grad()
-                d_real_data = batch['inputs']
-                # print(d_real_data)
-                d_real_label = D(d_real_data)
-
-                label_size = d_real_data.shape[0]
-
-                d_real_error = criterion(d_real_label, torch.ones((label_size,1))*0.7)  # ones = true
-                total_d_real_loss += d_real_error
-                d_real_error.backward()  # compute/store gradients, but don't change params
-                #  Train D on fake
-
-                d_fake_data = G()# .detach()  # detach to avoid training G on these labels
-                d_fake_label = D(G())
-
-                d_fake_error = criterion_g(d_fake_label, torch.zeros((batch_size,1)))  # zeros = fake
-
-                total_d_fake_loss += d_fake_error
-                d_fake_error.backward()
-                d_optimizer.step()
-                for name, parms in G.named_parameters():
-                    print('-->name:', name, '-->grad_requirs:', parms.requires_grad, \
-                          ' -->grad_value:', parms.grad)
-
-        avg_d_real_loss = total_d_real_loss / (args.batch_size*args.d_steps)
-        avg_d_fake_loss = total_d_fake_loss / (args.batch_size * args.d_steps)
-
-
-        # D.eval()
-        G.train()
-        for g_index in range(args.g_steps):
-            #  Train G on D's response
-
-            for i in range(len(train_batches)):
-
-                g_optimizer.zero_grad()
-
-                g_fake_data = G()
-
-                # D.eval()
-
-                dg_fake_label = D(g_fake_data)
-
-                g_error = criterion_g(dg_fake_label, torch.ones((batch_size, 1)))  # pretend all true
-                total_g_loss += g_error
-                g_error.backward()
-                g_optimizer.step()  # Only optimizes G's parameters
-            print(dg_fake_label)
-            print(g_error)
-            for name, parms in G.named_parameters():
-                print('-->name:', name, '-->grad_requirs:', parms.requires_grad, ' -->grad_value:', parms.grad)
-                # pdb.set_trace()
-
-        avg_g_loss = total_g_loss / (len(train_batches) * args.g_steps)
-
-        if epoch % print_interval == 0:
-            torch.save(D.state_dict(), args.save_path + 'Discriminator_model_' + str(model_num))
-            torch.save(G.state_dict(), args.save_path + 'Generator_model_' + str(model_num))
-            model_num += 1
-            print('avg_Discriminator_real_loss:', avg_d_real_loss)
-            print('avg_Discriminator_fake_loss:', avg_d_fake_loss)
-            print('avg_Generator_loss:', avg_g_loss)
-            print([get_sentence(list(i), vocab_id_to_token) for i in G().numpy()])
+        train(generator, disc, args.gan_epoch, trn_dl, val_dl, optimizerD, optimizerG, first=False)
+        learn.model.load_state_dict(generator.state_dict())
+        learn.predict("Red",n_words=50)
+        learn.save('poems_gan_gumbel')

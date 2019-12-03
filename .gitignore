@@ -7,6 +7,8 @@ data/
 *.so
 
 # Distribution / packaging
+data/
+data.zip
 .Python
 build/
 develop-eggs/
