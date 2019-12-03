@@ -107,12 +107,12 @@ if __name__ == '__main__':
     parser.add_argument('--train_lm', action="store_true", default=False)
     parser.add_argument('--train_gan', action="store_true", default=False)
     parser.add_argument('--lm_epoch', type=int, default=8)
-    parser.add_argument('--save-path', type=str, help='path to save models', default='models/')
+    parser.add_argument('--pretrain_lm', type=str,  default=None)
     args = parser.parse_args()
 
     path = Path(args.path)
     if args.train_lm:
-        train_lm(path,'poems_tmp','AWD',args.lm_epoch)
+        train_lm(path,'poems_tmp','AWD',args.lm_epoch, args.pretrain_lm)
     if args.train_gan:
         data_lm = load_data(path, 'poems_tmp')
         trn_dl = data_lm.train_dl
