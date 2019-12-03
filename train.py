@@ -17,18 +17,18 @@ print_interval = 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Model')
-    parser.add_argument('--d-lr', type=float, help="learning rate of generator model", default=0.001)
-    parser.add_argument('--g-lr', type=float, help="learning rate of discriminator model", default=100)
+    parser.add_argument('--d-lr', type=float, help="learning rate of discriminator model", default=0.001)
+    parser.add_argument('--g-lr', type=float, help="learning rate of generator model", default=0.0001)
     parser.add_argument('--n-layer', type=int, help='number of GRU layers', default=1)
     parser.add_argument('--batch-size', type=int, help="size of batch", default=10)
     parser.add_argument('--epochs', type=int, help="num epochs", default=10)
     parser.add_argument('--embed-file', type=str, help="embedding location", default='./data/glove.6B.100D.txt')
     parser.add_argument('--embed-dim', type=int, help="size of embeddings", default=100)
-    parser.add_argument('--drop-out',type=float,help='drop out of GRU', default=0)
+    parser.add_argument('--drop-out', type=float, help='drop out of GRU', default=0)
     parser.add_argument('--hidden-size', type=int, help="size of hidden dimension", default=128)
     parser.add_argument('--d-steps', type=int, help="numbers of training discriminator for an epoch", default=1)
-    parser.add_argument('--g-steps', type=int, help="numbers of training generator for an epoch", default=20)
-    parser.add_argument('--adam-beta', type=tuple, help='beta1 for Adam optimizers', default=(0.5,0.999))
+    parser.add_argument('--g-steps', type=int, help="numbers of training generator for an epoch", default=50)
+    parser.add_argument('--adam-beta', type=tuple, help='beta1 for Adam optimizers', default=(0.5, 0.999))
     parser.add_argument('--weight-decay', type=float, help='weight decay for Adam optimizers', default=0)
     parser.add_argument('--save-path', type=str, help='path to save models', default='models/')
     args = parser.parse_args()
@@ -69,8 +69,9 @@ if __name__ == '__main__':
     G = Generator(args.batch_size, sentence_length, vocabulary_size, args.hidden_size, args.n_layer, args.embed_dim, args.drop_out)
     D = Discriminator(args.batch_size, args.hidden_size, args.n_layer, args.embed_dim, embeddings, args.drop_out)
     criterion = nn.BCELoss()  
-    d_optimizer = optim.Adam(D.parameters(), lr=args.d_lr, betas=args.adam_beta, weight_decay=args.weight_decay)
-    g_optimizer = optim.Adam(G.parameters(), lr=args.g_lr, betas=args.adam_beta, weight_decay=args.weight_decay)
+    d_optimizer = optim.Adam(D.parameters(), lr=args.d_lr)
+    g_optimizer = optim.Adam(G.parameters(), lr=args.g_lr)
+    criterion_g = nn.BCELoss()
 
 
     for epoch in range(args.epochs):
@@ -84,7 +85,7 @@ if __name__ == '__main__':
 
             for batch in train_batches:
                 #  Train D on real
-                D.zero_grad()
+                d_optimizer.zero_grad()
                 d_real_data = batch['inputs']
                 # print(d_real_data)
                 d_real_label = D(d_real_data)
@@ -96,35 +97,48 @@ if __name__ == '__main__':
                 d_real_error.backward()  # compute/store gradients, but don't change params
                 #  Train D on fake
 
-                d_fake_data = G().detach()  # detach to avoid training G on these labels
-                d_fake_label = D(d_fake_data)
+                d_fake_data = G()# .detach()  # detach to avoid training G on these labels
+                d_fake_label = D(G())
 
-                d_fake_error = criterion(d_fake_label, torch.zeros((batch_size,1)))  # zeros = fake
+                d_fake_error = criterion_g(d_fake_label, torch.zeros((batch_size,1)))  # zeros = fake
+
                 total_d_fake_loss += d_fake_error
                 d_fake_error.backward()
                 d_optimizer.step()
+                for name, parms in G.named_parameters():
+                    print('-->name:', name, '-->grad_requirs:', parms.requires_grad, \
+                          ' -->grad_value:', parms.grad)
 
         avg_d_real_loss = total_d_real_loss / (args.batch_size*args.d_steps)
         avg_d_fake_loss = total_d_fake_loss / (args.batch_size * args.d_steps)
 
+
+        # D.eval()
         G.train()
         for g_index in range(args.g_steps):
             #  Train G on D's response
 
             for i in range(len(train_batches)):
 
-                G.zero_grad()
+                g_optimizer.zero_grad()
 
                 g_fake_data = G()
+
+                # D.eval()
+
                 dg_fake_label = D(g_fake_data)
-                g_error = criterion(dg_fake_label, torch.ones((batch_size, 1)))  # pretend all true
+
+                g_error = criterion_g(dg_fake_label, torch.ones((batch_size, 1)))  # pretend all true
                 total_g_loss += g_error
                 g_error.backward()
                 g_optimizer.step()  # Only optimizes G's parameters
-
+            print(dg_fake_label)
+            print(g_error)
+            for name, parms in G.named_parameters():
+                print('-->name:', name, '-->grad_requirs:', parms.requires_grad, ' -->grad_value:', parms.grad)
                 # pdb.set_trace()
 
-        avg_g_loss = total_g_loss / (args.batch_size * args.g_steps)
+        avg_g_loss = total_g_loss / (len(train_batches) * args.g_steps)
 
         if epoch % print_interval == 0:
             torch.save(D.state_dict(), args.save_path + 'Discriminator_model_' + str(model_num))
@@ -133,4 +147,4 @@ if __name__ == '__main__':
             print('avg_Discriminator_real_loss:', avg_d_real_loss)
             print('avg_Discriminator_fake_loss:', avg_d_fake_loss)
             print('avg_Generator_loss:', avg_g_loss)
-            pprint([get_sentence(list(i), vocab_id_to_token) for i in G().numpy()])
+            print([get_sentence(list(i), vocab_id_to_token) for i in G().numpy()])

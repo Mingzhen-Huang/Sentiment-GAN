@@ -16,19 +16,29 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
 
         self.noise = torch.rand(input_size, sentence_len, embedding_dim)
+        self.noise_size = (input_size, sentence_len, embedding_dim)
         self.vocab_size = vocab_size
         self.gru = nn.GRU(input_size = embedding_dim, hidden_size = hidden_size, batch_first = True,  num_layers = num_layers, dropout = dropout)
         self.dense = nn.Linear(hidden_size, 1)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+        self.testdense = nn.Linear(embedding_dim,1)
+
 
     def forward(self):    
         # pdb.set_trace()
-        rnn_output,_ = self.gru(self.noise,None)
+        rnn_output, _ = self.gru(torch.rand(self.noise_size))
         rnn_output = torch.squeeze(rnn_output)
         dense_output = self.dense(rnn_output)*self.vocab_size
         result = torch.squeeze(torch.abs(dense_output).int())
         mask = torch.where(result < self.vocab_size, torch.tensor([1.]), torch.tensor([0.]))
+
         # pdb.set_trace()
-        return result * mask
+        # return torch.squeeze(self.testdense(self.noise))
+        return self.relu(result * mask)
+
+
+
 
 
 class Discriminator(nn.Module):
