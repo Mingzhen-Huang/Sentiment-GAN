@@ -6,8 +6,10 @@ from util import *
 import argparse
 import logging
 
+models = {'AWD':AWD_LSTM, 'XL':TransformerXL}
+
 def train_lm(path,filename,model='AWD_LSTM',
-             epochs=8,pretrained_fnames=Nonef):
+             epochs=8,pretrained_fnames=None):
     
     #get data after running preprocess
     print(f'loading data from {path}/{filename};')
@@ -15,7 +17,7 @@ def train_lm(path,filename,model='AWD_LSTM',
     
     if pretrained_fnames: pretrained_fnames = pretrained_fnames.split(',')
     learn = language_model_learner(data_lm,models[model],
-                                   config=config,pretrained=False,
+                                   config=None,pretrained=False,
                                    pretrained_fnames=pretrained_fnames)
     print(f'training lm model {model}; pretrained from {pretrained_fnames};')
     
@@ -105,12 +107,12 @@ if __name__ == '__main__':
     parser.add_argument('--train_lm', action="store_true", default=False)
     parser.add_argument('--train_gan', action="store_true", default=False)
     parser.add_argument('--lm_epoch', type=int, default=8)
-    parser.add_argument('--save-path', type=str, help='path to save models', default='models/')
+    parser.add_argument('--pretrain_lm', type=str,  default=None)
     args = parser.parse_args()
 
     path = Path(args.path)
     if args.train_lm:
-        train_lm(path,'poems_tmp','AWD',8)
+        train_lm(path,'poems_tmp','AWD',args.lm_epoch, args.pretrain_lm)
     if args.train_gan:
         data_lm = load_data(path, 'poems_tmp')
         trn_dl = data_lm.train_dl
