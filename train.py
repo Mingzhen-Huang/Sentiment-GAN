@@ -4,9 +4,10 @@ from fastai.callbacks.tracker import SaveModelCallback, EarlyStoppingCallback
 from gan import *
 from util import *
 import argparse
+import logging
 
 def train_lm(path,filename,model='AWD_LSTM',
-             epochs=8,pretrained_fnames=None):
+             epochs=8,pretrained_fnames=Nonef):
     
     #get data after running preprocess
     print(f'loading data from {path}/{filename};')
@@ -101,8 +102,9 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Model')
     parser.add_argument('--path', type=str, help="path of data", default='./data')
-    parser.add_argument('--train_lm', type=bool, action="store_true", default=False)
-    parser.add_argument('--train_gan', type=bool, action="store_true", default=False)
+    parser.add_argument('--train_lm', action="store_true", default=False)
+    parser.add_argument('--train_gan', action="store_true", default=False)
+    parser.add_argument('--lm_epoch', type=int, default=8)
     parser.add_argument('--save-path', type=str, help='path to save models', default='models/')
     args = parser.parse_args()
 
