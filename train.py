@@ -9,7 +9,7 @@ import logging
 models = {'AWD':AWD_LSTM, 'XL':TransformerXL}
 
 def train_lm(path,filename,model='AWD_LSTM',
-             epochs=8,pretrained_fnames=Nonef):
+             epochs=8,pretrained_fnames=None):
     
     #get data after running preprocess
     print(f'loading data from {path}/{filename};')
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     path = Path(args.path)
     if args.train_lm:
-        train_lm(path,'poems_tmp','AWD',8)
+        train_lm(path,'poems_tmp','AWD',args.lm_epoch)
     if args.train_gan:
         data_lm = load_data(path, 'poems_tmp')
         trn_dl = data_lm.train_dl
