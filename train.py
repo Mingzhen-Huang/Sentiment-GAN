@@ -107,6 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_lm', action="store_true", default=False)
     parser.add_argument('--train_gan', action="store_true", default=False)
     parser.add_argument('--lm_epoch', type=int, default=8)
+    parser.add_argument('--gan_epoch', type=int, default=8)
     parser.add_argument('--pretrain_lm', type=str,  default=None)
     args = parser.parse_args()
 
@@ -135,7 +136,7 @@ if __name__ == '__main__':
         disc.train()
         generator.train();
 
-        train(generator, disc, 1, trn_dl, val_dl, optimizerD, optimizerG, first=False)
+        train(generator, disc, args.gan_epoch, trn_dl, val_dl, optimizerD, optimizerG, first=False)
         learn.model.load_state_dict(generator.state_dict())
         learn.predict("Red",n_words=50)
         learn.save('poems_gan_gumbel')
