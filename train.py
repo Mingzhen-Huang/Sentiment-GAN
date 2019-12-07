@@ -6,7 +6,7 @@ from util import *
 import argparse
 import logging
 
-models = {'AWD':AWD_LSTM, 'XL':TransformerXL}
+models = {'AWD':AWD_LSTM}
 
 def train_lm(path,filename,model='AWD_LSTM',
              epochs=8,pretrained_fnames=None):
