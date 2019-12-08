@@ -19,6 +19,7 @@ data_clas = TextClasDataBunch.from_df('./data/', df, df_test, vocab=data_lm.trai
 
 learn = text_classifier_learner(data_clas, AWD_LSTM, drop_mult=0.5)
 learn.load_encoder('ft_enc')
+learn.fit_one_cycle(1, 1e-2)
 
-
+learn.save('sentiment_disc', return_path=True)
 
