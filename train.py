@@ -3,6 +3,8 @@ from fastai.text import *
 from fastai.callbacks.tracker import SaveModelCallback, EarlyStoppingCallback
 from gan import *
 from util import *
+from sentiment_loss import *
+
 import argparse
 import logging
 
@@ -38,7 +40,7 @@ def train_lm(path,filename,model='AWD_LSTM',
     learn.save(filename+'_lm')
 
 
-def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, first=True):
+def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, first=True, senti_disc=None):
     gen_iterations = 0
     
     for epoch in range(epochs):
@@ -55,6 +57,11 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, 
                 fake_sample =seq_gumbel_softmax(fake)
                 with torch.no_grad():
                     gen_loss = reward = disc(fake_sample)
+
+                    if senti_disc:
+                        sentiment_loss = senti_disc.get(fake_sample)
+                        print(sentiment_loss)
+
                     if crit: gen_loss = crit(fake,fake_sample,reward.squeeze(1))
                     gen_loss = gen_loss.mean()
                 gen_loss.requires_grad_(True)
@@ -135,10 +142,12 @@ if __name__ == '__main__':
         optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
         optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
 
+        senti_disc = sentiment_loss(data_lm)
+
         disc.train()
         generator.train()
 
-        train(generator, disc, args.gan_epoch, trn_dl, val_dl, optimizerD, optimizerG, first=False)
+        train(generator, disc, args.gan_epoch, trn_dl, val_dl, optimizerD, optimizerG, first=False, senti_disc=senti_disc)
         learn.model.load_state_dict(generator.state_dict())
         learn.predict("Red",n_words=50)
         learn.save('poems_gan_gumbel')
