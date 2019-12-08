@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
         disc = TextDicriminator(encoder, 400).cuda()
         out = disc(x)
-        probs,raw_outputs, outputs = generator(x)
+        probs, raw_outputs, outputs = generator(x)
         optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
         optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
 

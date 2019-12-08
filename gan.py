@@ -30,3 +30,4 @@ class TextDicriminator(nn.Module):
         out = self.layers(x)
         return out
 
+
