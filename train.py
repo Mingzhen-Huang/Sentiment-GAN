@@ -27,7 +27,7 @@ def train_lm(path,filename,model='AWD_LSTM',
     if pretrained_fnames:
         #layered training
         print(f'training lm model head;')
-        learn.fit_one_cycle(1, 3e-3, moms=(0.8,0.7))
+        learn.fit_one_cycle(1, 3e-3, moms=(0.8, 0.7))
         print(f'saving lm model head to {path}/{filename}_head;')
         learn.save(filename+'_head')
         learn.unfreeze()
@@ -86,15 +86,15 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, 
             for i, ds in enumerate(val_dl):
                 with torch.no_grad():
                     x, y = ds
-                    bs,sl = x.size()
-                    fake,_,_ = gen(x)
+                    bs, sl = x.size()
+                    fake, _, _ = gen(x)
                     fake_sample =seq_gumbel_softmax(fake)
                     gen_loss = reward = disc(fake_sample)
-                    if crit: gen_loss = crit(fake,fake_sample,reward.squeeze(1))
+                    if crit: gen_loss = crit(fake, fake_sample, reward.squeeze(1))
                     gen_loss = gen_loss.mean()
                     fake_sample = seq_gumbel_softmax(fake)
                     fake_loss = disc(fake_sample)
-                    real_loss = disc(y.view(bs,sl))
+                    real_loss = disc(y.view(bs, sl))
                     disc_loss = (fake_loss-real_loss).mean(0)
                 pbar.update()
         print('Valid Loss:')
@@ -113,7 +113,9 @@ if __name__ == '__main__':
 
     path = Path(args.path)
     if args.train_lm:
+        # train a language model with awd-lstm
         train_lm(path,'poems_tmp','AWD',args.lm_epoch, args.pretrain_lm)
+
     if args.train_gan:
         data_lm = load_data(path, 'poems_tmp')
         trn_dl = data_lm.train_dl
@@ -127,14 +129,14 @@ if __name__ == '__main__':
         generator = deepcopy(learn.model) 
         generator.load_state_dict(learn.model.state_dict())
 
-        disc = TextDicriminator(encoder,400).cuda()
+        disc = TextDicriminator(encoder, 400).cuda()
         out = disc(x)
         probs,raw_outputs, outputs = generator(x)
         optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
         optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
 
         disc.train()
-        generator.train();
+        generator.train()
 
         train(generator, disc, args.gan_epoch, trn_dl, val_dl, optimizerD, optimizerG, first=False)
         learn.model.load_state_dict(generator.state_dict())
