@@ -60,13 +60,15 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, 
 
                     if senti_disc:
                         sentiment_loss = senti_disc.get(fake_sample)
-                        print(sentiment_loss)
+                        #print(sentiment_loss)
 
                     if crit: gen_loss = crit(fake,fake_sample,reward.squeeze(1))
                     gen_loss = gen_loss.mean()
                 gen_loss.requires_grad_(True)
                 gen_loss.backward()
-                optimizerG.step()
+                optimizerG.step()    
+                sentiment_loss.backward()
+                optimizerG.step()    
                 gen_iterations += 1
                 d_iters = 3
                 for j in range(d_iters):
