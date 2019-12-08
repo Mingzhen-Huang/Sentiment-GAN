@@ -24,5 +24,5 @@ learn.load_encoder('ft_enc')
 learn.fit_one_cycle(1, 1e-2)
 
 
-learn.predict("This was a great movie!")
+learn.predict("This was a great movie!!")
 
