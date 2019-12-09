@@ -7,7 +7,7 @@ from sentiment_loss import *
 
 import argparse
 import logging
-
+import pdb
 models = {'AWD':AWD_LSTM}
 
 def train_lm(path,filename,model='AWD_LSTM',
@@ -67,6 +67,7 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, 
                 gen_loss.requires_grad_(True)
                 gen_loss.backward()
                 optimizerG.step()    
+                sentiment_loss.requires_grad_(True)
                 sentiment_loss.backward()
                 optimizerG.step()    
                 gen_iterations += 1
