@@ -28,14 +28,17 @@ import pandas as pd
 # 	           .databunch(bs=64))
 
 # data_lm.save('./data/poems_tmp')
-path = Path('./')
-bs = 64
-poems = (path/'newpoetrys.txt').open().read().split('\n\n')
-poems_df = pd.DataFrame(poems)
-tokenizer = Tokenizer(SpacyTokenizer, 'en')
-processor = [TokenizeProcessor(tokenizer=tokenizer), NumericalizeProcessor(min_freq=1,max_vocab=60000)]
-data_lm = (TextList.from_df(poems_df,path,cols=0,processor=processor)
-            .split_by_rand_pct(0.1)
-            .label_for_lm()           
-            .databunch(bs=bs))
-data_lm.save('./data/poems_tmp')
+
+
+df = pd.read_csv('kaggle_poem_dataset.csv')['Content']
+# path = Path('./')
+# bs = 64
+# poems = (path/'newpoetrys.txt').open().read().split('\n\n')
+# poems_df = pd.DataFrame(poems)
+# tokenizer = Tokenizer(SpacyTokenizer, 'en')
+# processor = [TokenizeProcessor(tokenizer=tokenizer), NumericalizeProcessor(min_freq=1,max_vocab=60000)]
+# data_lm = (TextList.from_df(poems_df,path,cols=0,processor=processor)
+#             .split_by_rand_pct(0.1)
+#             .label_for_lm()           
+#             .databunch(bs=bs))
+# data_lm.save('./data/poems_tmp')
