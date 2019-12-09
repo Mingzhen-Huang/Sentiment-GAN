@@ -180,7 +180,7 @@ if __name__ == '__main__':
         trn_dl = data_lm.train_dl
         val_dl = data_lm.valid_dl
         learn = language_model_learner(data_lm, arch=AWD_LSTM)
-        learn.load('poems_tmp_lm')
+        learn.load('poems_tmp_finetuned')
 
         encoder = deepcopy(learn.model[0])
         x, y = next(iter(trn_dl))
