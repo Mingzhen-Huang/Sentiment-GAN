@@ -10,8 +10,6 @@ class TextDicriminator(nn.Module):
         self.encoder = encoder
         #classifier
         layers = []
-        layers+=bn_drop_lin(nh*3,nh,bias=False)
-        layers += bn_drop_lin(nh,nh,p=0.25)
         layers+=bn_drop_lin(nh,1,p=0.15,actn=nn.Sigmoid())
         if bn_final: layers += [nn.BatchNorm1d(1)]
         self.layers = nn.Sequential(*layers)
