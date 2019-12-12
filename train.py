@@ -19,7 +19,7 @@ def train_lm(path,filename,
     if basic:
         learn = language_model_learner(data_lm,AWD_LSTM)
     else:
-        learn = language_model_learner(data_lm, pretrained_fnames=['lstm_wt103', 'itos_wt103'],
+        learn = language_model_learner(data_lm, arch = AWD_LSTM, pretrained_fnames=['lstm_wt103', 'itos_wt103'],
 drop_mult=0.5)
 
     print(f'training for {epochs} epochs')
