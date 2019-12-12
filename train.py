@@ -168,6 +168,7 @@ if __name__ == '__main__':
     parser.add_argument('--lm_epoch', type=int, default=8)
     parser.add_argument('--gan_epoch', type=int, default=8)
     parser.add_argument('--pretrain_lm', type=str,  default=None)
+    parser.add_argument('--sentiment', type=str, help="sentiment of poem, N or P", default='N')
     args = parser.parse_args()
 
     path = Path(args.path)
@@ -194,7 +195,7 @@ if __name__ == '__main__':
         optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
         optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
 
-        senti_disc = sentiment_loss(data_lm, 'N')  # 'N' for negative, 'P' for positive
+        senti_disc = sentiment_loss(data_lm, args.sentiment)  # 'N' for negative, 'P' for positive
 
         disc.train()
         generator.train()
