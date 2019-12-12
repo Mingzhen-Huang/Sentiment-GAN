@@ -121,7 +121,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretrain_lm', type=str,  default=None)
     parser.add_argument('--negative', type=bool, help="sentiment of poem, true for negative, false for positive", default=True)
     parser.add_argument('--sentiment', type=int,  default=1)
-    parser.add_argument('--optim', type=strt,  default=adam)
+    parser.add_argument('--optim', type=str,  default=adam)
     args = parser.parse_args()
 
     path = Path(args.path)
