@@ -12,12 +12,14 @@ import string
 
 
 def train_lm(path,filename,
-             epochs=8,lr=1e-3):
+             epochs=8,lr=1e-3,basic=False):
 
     print(f'loading data from {path}/{filename};')
     data_lm = load_data(path,filename, bs=64,bptt=70)
-
-    learn = language_model_learner(data_lm,AWD_LSTM)
+    if basic:
+        learn = language_model_learner(data_lm,AWD_LSTM)
+    else:
+        learn = RNNLearner(data_lm)
 
     print(f'training for {epochs} epochs')
     learn.fit_one_cycle(epochs, lr, moms=(0.8,0.7))
@@ -106,12 +108,13 @@ if __name__ == '__main__':
     parser.add_argument('--lm_lr', type=float,  default=1e-3)
     parser.add_argument('--d_lr', type=float,  default=1e-3)
     parser.add_argument('--g_lr', type=float,  default=1e-3)
+    parser.add_argument('--basic', action="store_false")
     args = parser.parse_args()
 
     path = Path(args.path)
     if args.train_lm:
         # train a language model with awd-lstm
-        train_lm(path,'poems_tmp',args.lm_epoch, args.lm_lr)
+        train_lm(path,'poems_tmp',args.lm_epoch, args.lm_lr,basic)
 
     if args.train_gan:
         data_lm = load_data(path, 'poems_tmp')
