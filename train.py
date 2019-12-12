@@ -12,7 +12,7 @@ import string
 
 
 def train_lm(path,filename,
-             epochs=8,lr):
+             epochs=8,lr=1e-3):
 
     print(f'loading data from {path}/{filename};')
     data_lm = load_data(path,filename, bs=64,bptt=70)
