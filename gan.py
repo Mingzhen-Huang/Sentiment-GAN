@@ -11,8 +11,9 @@ class TextDicriminator(nn.Module):
         #classifier
         layers = []
         layers+=bn_drop_lin(nh,1,p=0.15,actn=nn.Sigmoid())
-        layers+=SelfAttention(nh)
+        # layers+=SelfAttention(nh)
         layers += [nn.BatchNorm1d(1)]
+        layers+=bn_drop_lin(nh,1,p=0.4,actn=nn.Sigmoid())
         self.layers = nn.Sequential(*layers)
     
     def pool(self, x, bs, is_max):
