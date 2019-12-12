@@ -19,7 +19,7 @@ def train_lm(path,filename,
     if basic:
         learn = language_model_learner(data_lm,AWD_LSTM)
     else:
-        learn = RNNLearner(data_lm)
+        learn = RNNLearner(data_lm,nn.GRU)
 
     print(f'training for {epochs} epochs')
     learn.fit_one_cycle(epochs, lr, moms=(0.8,0.7))
