@@ -76,7 +76,6 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG,  first=True
         print(f'Epoch {epoch}:')
         print('Train Loss:')
         print(f'Loss_D {disc_loss.data.item()}; Loss_G {gen_loss.data.item()} Ppx {torch.exp(lm_loss(fake,y))}')
-        print(f'D_real {real_loss.mean(0).view(1).data.item()}; Loss_D_fake {fake_loss.mean(0).view(1).data.item()}')
         disc.eval(), gen.eval()
         with tqdm(total=len(val_dl)) as pbar:
             for i, ds in enumerate(val_dl):
@@ -94,7 +93,6 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG,  first=True
                 pbar.update()
         print('Valid Loss:')
         print(f'Loss_D {disc_loss.data.item()}; Loss_G {gen_loss.data.item()} Ppx {torch.exp(lm_loss(fake,y))}')
-        print(f'D_real {real_loss.mean(0).view(1).data.item()}; Loss_D_fake {fake_loss.mean(0).view(1).data.item()}')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Model')
@@ -109,13 +107,13 @@ if __name__ == '__main__':
     parser.add_argument('--lm_lr', type=float,  default=1e-3)
     parser.add_argument('--d_lr', type=float,  default=1e-3)
     parser.add_argument('--g_lr', type=float,  default=1e-3)
-    parser.add_argument('--basic', action="store_false")
+    parser.add_argument('--pretrain', action="store_false")
     args = parser.parse_args()
 
     path = Path(args.path)
     if args.train_lm:
         # train a language model with awd-lstm
-        train_lm(path,'poems_tmp',args.lm_epoch, args.lm_lr,args.basic)
+        train_lm(path,'poems_tmp',args.lm_epoch, args.lm_lr,args.pretrain)
 
     if args.train_gan:
         data_lm = load_data(path, 'poems_tmp')

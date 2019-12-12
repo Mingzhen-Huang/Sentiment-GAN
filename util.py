@@ -16,3 +16,6 @@ def seq_gumbel_softmax(input):
         samples.append(torch.multinomial(F.gumbel_softmax(input[:,i,:]),1))
     samples = torch.stack(samples).transpose(1,0).squeeze(2) 
     return samples
+
+def loss(x, y):
+    
