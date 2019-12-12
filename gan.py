@@ -11,7 +11,7 @@ class TextDicriminator(nn.Module):
         #classifier
         layers = []
         layers+=bn_drop_lin(nh,1,p=0.15,actn=nn.Sigmoid())
-        # layers+=nn.GRU(10, 20, 2)
+        layers+=SelfAttention(nh)
         layers += [nn.BatchNorm1d(1)]
         self.layers = nn.Sequential(*layers)
     

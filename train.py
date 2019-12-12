@@ -12,35 +12,21 @@ import string
 
 
 def train_lm(path,filename,
-             epochs=8):
+             epochs=8,lr):
 
-    #get data after running preprocess
     print(f'loading data from {path}/{filename};')
     data_lm = load_data(path,filename, bs=64,bptt=70)
 
-    #load pretrained weights
-    if pretrained_fnames: pretrained_fnames = pretrained_fnames.split(',')
     learn = language_model_learner(data_lm,AWD_LSTM)
     print(f'training lm model {model}; pretrained from {pretrained_fnames};')
 
-    #early stopping and saving at every epoch
-    cb = [SaveModelCallback(learn),EarlyStoppingCallback(learn)]
-
-    if pretrained_fnames:
-        #layered training
-        print(f'training lm model head;')
-        learn.fit_one_cycle(1, 3e-3, moms=(0.8,0.7))
-        print(f'saving lm model head to {path}/{filename}_head;')
-        learn.save(filename+'_head')
-        learn.unfreeze()
-
     print(f'training for {epochs} epochs')
-    learn.fit_one_cycle(epochs, 3e-4, moms=(0.8,0.7),callbacks=cb)
+    learn.fit_one_cycle(epochs, lr, moms=(0.8,0.7))
     print(f'saving model to {path}/{filename}_finetuned')
     learn.save(filename+'_finetuned')
 
             
-def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, first=True, senti_disc=None):
+def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG,  first=True, senti_disc=None):
     gen_iterations = 0
     
     for epoch in range(epochs):
@@ -60,9 +46,7 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, 
 
                     if senti_disc:
                         sentiment_loss = senti_disc.get(fake_sample)
-                        #print(sentiment_loss)
 
-                    if crit: gen_loss = crit(fake,fake_sample,reward.squeeze(1))
                     gen_loss = gen_loss.mean()
                 gen_loss.requires_grad_(True)
                 gen_loss.backward()
@@ -100,7 +84,6 @@ def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, 
                     fake, _, _ = gen(x)
                     fake_sample =seq_gumbel_softmax(fake)
                     gen_loss = reward = disc(fake_sample)
-                    if crit: gen_loss = crit(fake, fake_sample, reward.squeeze(1))
                     gen_loss = gen_loss.mean()
                     fake_sample = seq_gumbel_softmax(fake)
                     fake_loss = disc(fake_sample)
@@ -118,16 +101,18 @@ if __name__ == '__main__':
     parser.add_argument('--train_gan', action="store_true", default=False)
     parser.add_argument('--lm_epoch', type=int, default=8)
     parser.add_argument('--gan_epoch', type=int, default=8)
-    parser.add_argument('--pretrain_lm', type=str,  default=None)
     parser.add_argument('--negative', type=bool, help="sentiment of poem, true for negative, false for positive", default=True)
     parser.add_argument('--sentiment', type=int,  default=1)
     parser.add_argument('--optim', type=str,  default='adam')
+    parser.add_argument('--lm_lr', type=float,  default=1e-3)
+    parser.add_argument('--d_lr', type=float,  default=1e-3)
+    parser.add_argument('--g_lr', type=float,  default=1e-3)
     args = parser.parse_args()
 
     path = Path(args.path)
     if args.train_lm:
         # train a language model with awd-lstm
-        train_lm(path,'poems_tmp','AWD',args.lm_epoch, args.pretrain_lm)
+        train_lm(path,'poems_tmp',args.lm_epoch, args.lm_lr)
 
     if args.train_gan:
         data_lm = load_data(path, 'poems_tmp')
@@ -145,11 +130,11 @@ if __name__ == '__main__':
         disc = TextDicriminator(encoder, 400).cuda()
         probs, raw_outputs, outputs = generator(x)
         if args.optim == 'adam':
-            optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
-            optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
+            optimizerD = optim.Adam(disc.parameters(), lr = args.d_lr)
+            optimizerG = optim.Adam(generator.parameters(), lr = args.g_lr, betas=(0.7, 0.8))
         elif args.optim == 'sgd':
-            optimizerD = optim.SGD(disc.parameters(), lr = 3e-4)
-            optimizerG = optim.SGD(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
+            optimizerD = optim.SGD(disc.parameters(), lr = args.d_lr)
+            optimizerG = optim.SGD(generator.parameters(), lr = args.g_lr, betas=(0.7, 0.8))
 
         senti_disc = sentiment_loss(data_lm, args.negative)  # 'N' for negative, 'P' for positive
 
