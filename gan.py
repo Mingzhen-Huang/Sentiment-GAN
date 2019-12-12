@@ -2,7 +2,7 @@ from fastai import *
 from fastai.text import *
 from tqdm import tqdm
 from util import *
-
+import torch.nn as nn
 class TextDicriminator(nn.Module):
     def __init__(self,encoder, nh):
         super().__init__()
@@ -11,7 +11,7 @@ class TextDicriminator(nn.Module):
         #classifier
         layers = []
         layers+=bn_drop_lin(nh,1,p=0.15,actn=nn.Sigmoid())
-        layers+=nn.GRU(10, 20, 2)
+        # layers+=nn.GRU(10, 20, 2)
         layers += [nn.BatchNorm1d(1)]
         self.layers = nn.Sequential(*layers)
     
