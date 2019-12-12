@@ -18,7 +18,6 @@ def train_lm(path,filename,
     data_lm = load_data(path,filename, bs=64,bptt=70)
 
     learn = language_model_learner(data_lm,AWD_LSTM)
-    print(f'training lm model {model}; pretrained from {pretrained_fnames};')
 
     print(f'training for {epochs} epochs')
     learn.fit_one_cycle(epochs, lr, moms=(0.8,0.7))
