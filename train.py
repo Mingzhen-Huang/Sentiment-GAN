@@ -120,6 +120,8 @@ if __name__ == '__main__':
     parser.add_argument('--gan_epoch', type=int, default=8)
     parser.add_argument('--pretrain_lm', type=str,  default=None)
     parser.add_argument('--negative', type=bool, help="sentiment of poem, true for negative, false for positive", default=True)
+    parser.add_argument('--sentiment', type=int,  default=1)
+    parser.add_argument('--optim', type=strt,  default=adam)
     args = parser.parse_args()
 
     path = Path(args.path)
@@ -141,10 +143,13 @@ if __name__ == '__main__':
         generator.load_state_dict(learn.model.state_dict())
 
         disc = TextDicriminator(encoder, 400).cuda()
-        out = disc(x)
         probs, raw_outputs, outputs = generator(x)
-        optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
-        optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
+        if args.optim == 'adam':
+            optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
+            optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
+        elif args.optim == 'sgd':
+            optimizerD = optim.SGD(disc.parameters(), lr = 3e-4)
+            optimizerG = optim.SGD(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
 
         senti_disc = sentiment_loss(data_lm, args.negative)  # 'N' for negative, 'P' for positive
 

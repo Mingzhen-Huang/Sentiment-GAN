@@ -11,7 +11,8 @@ class TextDicriminator(nn.Module):
         #classifier
         layers = []
         layers+=bn_drop_lin(nh,1,p=0.15,actn=nn.Sigmoid())
-        if bn_final: layers += [nn.BatchNorm1d(1)]
+        layers+=nn.GRU(10, 20, 2)
+        layers += [nn.BatchNorm1d(1)]
         self.layers = nn.Sequential(*layers)
     
     def pool(self, x, bs, is_max):
@@ -19,7 +20,7 @@ class TextDicriminator(nn.Module):
         return f(x.permute(0,2,1), (1,)).view(bs,-1)
     
     def forward(self, inp,y=None):
-        raw_outputs, outputs = self.encoder(inp)
+        _, outputs = self.encoder(inp)
         output = outputs[-1]
         bs,sl,_ = output.size()
         avgpool = self.pool(output, bs, False)
