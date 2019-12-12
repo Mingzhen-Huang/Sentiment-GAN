@@ -114,7 +114,7 @@ if __name__ == '__main__':
     path = Path(args.path)
     if args.train_lm:
         # train a language model with awd-lstm
-        train_lm(path,'poems_tmp',args.lm_epoch, args.lm_lr,basic)
+        train_lm(path,'poems_tmp',args.lm_epoch, args.lm_lr,args.basic)
 
     if args.train_gan:
         data_lm = load_data(path, 'poems_tmp')
