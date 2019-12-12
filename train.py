@@ -194,7 +194,7 @@ if __name__ == '__main__':
         optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
         optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
 
-        senti_disc = sentiment_loss(data_lm)
+        senti_disc = sentiment_loss(data_lm, 'N')  # 'N' for negative, 'P' for positive
 
         disc.train()
         generator.train()
