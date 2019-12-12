@@ -2,7 +2,7 @@ from fastai import *
 from fastai.text import *
 from tqdm import tqdm
 from util import *
-import torch.nn as nn
+# import torch.nn as nn
 class TextDicriminator(nn.Module):
     def __init__(self,encoder, nh):
         super().__init__()
