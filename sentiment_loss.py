@@ -5,7 +5,7 @@ from util import *
 import pandas as pd
 
 class sentiment_loss():
-    def __init__(self, data_lm, sentiment = 'N'):
+    def __init__(self, data_lm, negative = True):
         super().__init__()
 
         df = pd.read_json('./data/imdb_sentiment_train_15k.jsonl', 'records', lines=True)
@@ -18,7 +18,7 @@ class sentiment_loss():
 
         self.model = model.load('sentiment_disc')
         self.data_lm = data_lm
-        self.sentiment = sentiment
+        self.negative = negative
 
     def get(self, fake_sample):
         batch_loss = []
@@ -26,7 +26,10 @@ class sentiment_loss():
             text = self.data_lm.vocab.textify(s)
             loss = self.model.predict(text)[2][1]
             batch_loss.append(loss)
-        if self.sentiment == 'N':
+        if self.negative:
             return torch.mean(torch.tensor(batch_loss))
         else:
             return 1-torch.mean(torch.tensor(batch_loss))
+
+    def pred(self, poem):
+        return self.model.predict(poem)[2][1]

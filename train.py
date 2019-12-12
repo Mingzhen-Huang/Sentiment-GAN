@@ -10,33 +10,17 @@ import logging
 import pdb
 import string
 
-models = {'AWD':AWD_LSTM, 'XL':TransformerXL}
 
-#train language model with either AWD_LSTM or TransformerXL archs and generate preds
-def train_lm(path,filename,model='XL',
-             epochs=8,pretrained_fnames=None,preds=False):
+def train_lm(path,filename,
+             epochs=8):
 
     #get data after running preprocess
     print(f'loading data from {path}/{filename};')
     data_lm = load_data(path,filename, bs=64,bptt=70)
 
-    #change config if XL
-    if model == 'XL':
-        config = tfmerXL_lm_config.copy()
-        config['mem_len'] = 150
-        config['output_p'] = 0.1
-        config['embed_p'] = 0.1
-        config['ff_p'] = 0.1
-        config['resid_p'] = 0.1
-        config['d_inner'] = 1024
-        config['d_model'] = 128
-    else: config=None
-
     #load pretrained weights
     if pretrained_fnames: pretrained_fnames = pretrained_fnames.split(',')
-    learn = language_model_learner(data_lm,models[model],
-                                   config=config,pretrained=False,
-                                   pretrained_fnames=pretrained_fnames)
+    learn = language_model_learner(data_lm,AWD_LSTM)
     print(f'training lm model {model}; pretrained from {pretrained_fnames};')
 
     #early stopping and saving at every epoch
@@ -55,39 +39,6 @@ def train_lm(path,filename,model='XL',
     print(f'saving model to {path}/{filename}_finetuned')
     learn.save(filename+'_finetuned')
 
-    #generate outputs from validation set
-    if preds:
-        print(f'generating predictions and saving to {path}/{filename}_preds.txt;')
-        get_valid_preds(learn,data_lm,filename+'_'+model+'_preds.txt')
-
-def post_process(text):
-    text = text.replace('\n','\\n')
-    text = text.split()
-    new_text = ''
-    for i in range(len(text)):
-        if text[i] in ['xxmaj','xxup'] and i+1<len(text): text[i+1] = text[i+1].capitalize()
-        if text[i] == 'i': text[i] = text[i].capitalize()
-    for tok in text:
-        if tok in string.punctuation or tok in ["\'m","n\'t","\'ll","\'s","\'ve"]:new_text+=tok
-        elif tok not in ['xxmaj','xxup','xxbos','xxrep']:new_text+=' '+tok
-    return new_text.replace('\\n','\n').replace('" ','"').replace('&&','')
-
-def get_valid_preds(learn,data,file_name,test=None):
-    if not test:
-        test = []
-        for i in range(len(data.valid_ds)):
-            test.append(data.valid_ds.x.get(i).text)
-    tot = ''
-    for text in test:
-        tot+=text
-        text = text.replace('\n','\\n').split(' ')
-        num_words = len(text)
-        seed = text[:num_words//4]
-        seed = ' '.join(t for t in seed)
-        tot+='----------$----------'+seed
-        pred = post_process(learn.predict(seed,num_words-num_words//4))
-        tot+='----------$----------'+pred
-        print(tot+'\n\n\n\n\n\n\n')
             
 def train(gen, disc, epochs, trn_dl, val_dl, optimizerD, optimizerG, crit=None, first=True, senti_disc=None):
     gen_iterations = 0
@@ -168,7 +119,7 @@ if __name__ == '__main__':
     parser.add_argument('--lm_epoch', type=int, default=8)
     parser.add_argument('--gan_epoch', type=int, default=8)
     parser.add_argument('--pretrain_lm', type=str,  default=None)
-    parser.add_argument('--sentiment', type=str, help="sentiment of poem, N or P", default='N')
+    parser.add_argument('--negative', type=bool, help="sentiment of poem, true for negative, false for positive", default=True)
     args = parser.parse_args()
 
     path = Path(args.path)
@@ -195,12 +146,11 @@ if __name__ == '__main__':
         optimizerD = optim.Adam(disc.parameters(), lr = 3e-4)
         optimizerG = optim.Adam(generator.parameters(), lr = 3e-3, betas=(0.7, 0.8))
 
-        senti_disc = sentiment_loss(data_lm, args.sentiment)  # 'N' for negative, 'P' for positive
+        senti_disc = sentiment_loss(data_lm, args.negative)  # 'N' for negative, 'P' for positive
 
         disc.train()
         generator.train()
 
         train(generator, disc, args.gan_epoch, trn_dl, val_dl, optimizerD, optimizerG, first=False, senti_disc=senti_disc)
         learn.model.load_state_dict(generator.state_dict())
-        learn.predict("Red",n_words=50)
         learn.save('poems_gan_gumbel')

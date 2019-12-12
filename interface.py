@@ -1,6 +1,7 @@
 from fastai import *
 from fastai.text import *
 import argparse
+from sentiment_loss import *
 
 path = Path('./data')
 data_lm = load_data(path, 'poems_tmp')
@@ -13,8 +14,10 @@ parser.add_argument('--n_words', type=int, help="Number of predictions", default
 
 args = parser.parse_args()
 
-
-print(learn.predict(args.word, n_words=args.n_words))
+poem = learn.predict(args.word, n_words=args.n_words)
+senti_disc = sentiment_loss(data_lm)  # 'N' for negative, 'P' for positive
+print(poem)
+print(senti_disc.pred(poem))
 
 
 
