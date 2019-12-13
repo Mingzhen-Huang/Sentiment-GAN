@@ -38,9 +38,9 @@ Or can modify some hyperparameters:
 
 ```
 python train.py --train_lm
-				--lm_lr # learning rate, type=float, default=1e-3
-  				--lm_epoch # training epoch, type=int, default=8
-    			--pretrain # 
+		--lm_lr # learning rate, type=float, default=1e-3
+  		--lm_epoch # training epoch, type=int, default=8
+    	        --pretrain # 
 ```
 
 2.  Train the sentiment discriminator:
@@ -61,7 +61,7 @@ Or can modify some hyperparameters:
 
 ```
 python train.py --train_gan
-				--path PATH # path of data, type=str, default='./data'
+		--path PATH # path of data, type=str, default='./data'
                 --gan_epoch # training epoch, type=int, default=8
                 --negative # sentiment of poem, true for negative, false for positive, type=bool, default=True
                 --optim # optimizer, 'adam' or 'sgd', type=str,  default='adam'
@@ -73,7 +73,7 @@ python train.py --train_gan
 
 ```
 python interface.py --word # beginning words, type=str, default='Red'
-					--n_words # number of predictions, type=int, default=50
+		    --n_words # number of predictions, type=int, default=50
 ```
 
 
