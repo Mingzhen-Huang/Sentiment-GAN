@@ -26,7 +26,14 @@ train process part of in `train.py`  are inspired by code of Creative GANs for g
 
 Please run the program step by step:
 
-1.  Train the language model of poetry:
+1.  Get the datasets and stores in `./data/`
+
+-   Kaggle poetry dataset: https://www.kaggle.com/johnhallman/complete-poetryfoundationorg-dataset
+-   Gutenberg Poetry Corpus: https://github.com/aparrish/gutenberg-poetry-corpus
+-   Shakespeare SONNET: https://github.com/jhlau/deepspeare/tree/master/datasets
+-   IMDB reviews dataset : https://datasets.imdbws.com/
+
+2.  Train the language model of poetry:
 
 Can simply run:
 
@@ -42,13 +49,13 @@ python train.py --train_lm
   		--lm_epoch # training epoch, type=int, default=8
 ```
 
-2.  Train the sentiment discriminator:
+3.  Train the sentiment discriminator:
 
 ```
 python sentiment_discriminator.py
 ```
 
-3.  Train the sentiment-GAN:
+4.  Train the sentiment-GAN:
 
 Can simply run:
 
@@ -68,7 +75,7 @@ python train.py --train_gan
                 --g_lr # learning rate of generator, type=float,  default=1e-3
 ```
 
-4.  Use interface to generate poetry:
+5.  Use interface to generate poetry:
 
 ```
 python interface.py --word # beginning words, type=str, default='Red'
