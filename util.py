@@ -17,5 +17,5 @@ def seq_gumbel_softmax(input):
     samples = torch.stack(samples).transpose(1,0).squeeze(2) 
     return samples
 
-def loss(x, y):
-    
+# def loss(x, y):
+#

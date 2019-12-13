@@ -102,7 +102,6 @@ if __name__ == '__main__':
     parser.add_argument('--lm_epoch', type=int, default=8)
     parser.add_argument('--gan_epoch', type=int, default=8)
     parser.add_argument('--negative', type=bool, help="sentiment of poem, true for negative, false for positive", default=True)
-    parser.add_argument('--sentiment', type=int,  default=1)
     parser.add_argument('--optim', type=str,  default='adam')
     parser.add_argument('--lm_lr', type=float,  default=1e-3)
     parser.add_argument('--d_lr', type=float,  default=1e-3)
