@@ -5,7 +5,7 @@ from util import *
 import pandas as pd
 
 class sentiment_loss():
-    def __init__(self, data_lm, negative = True):
+    def __init__(self, data_lm, negative=True):
         super().__init__()
 
         df = pd.read_json('./data/imdb_sentiment_train_15k.jsonl', 'records', lines=True)

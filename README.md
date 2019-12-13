@@ -40,7 +40,6 @@ Or can modify some hyperparameters:
 python train.py --train_lm
 		--lm_lr # learning rate, type=float, default=1e-3
   		--lm_epoch # training epoch, type=int, default=8
-    	        --pretrain # 
 ```
 
 2.  Train the sentiment discriminator:

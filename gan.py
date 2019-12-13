@@ -4,7 +4,7 @@ from tqdm import tqdm
 from util import *
 
 class TextDicriminator(nn.Module):
-    def __init__(self,encoder, nh, bn_final=True):
+    def __init__(self, encoder, nh, bn_final=True):
         super().__init__()
         #encoder
         self.encoder = encoder
